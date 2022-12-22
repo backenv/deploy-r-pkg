@@ -8,9 +8,11 @@ showhelp() {
   echo -e "[+]\t--no-repo: Skip publishing to private repository"
   echo -e "[+]\t--remove: Remove package before installation"
   echo -e "[+]\t-h|--help: Show this help"
-  echo -e "[+]\tNOTES:"
-  echo -e "[+]\t\t- needs R and devtools + testthat packages"
-  echo -e "[+]\t\t- repository upload needs curl and REPO_URL + REPO_USER environment variables"
+  echo -e "[+] NOTES:"
+  echo -e "\t\t- Needs R and devtools + testthat packages"
+  echo -e "\t\t- Repository upload requires curl and to set"
+  echo -e "\t\t\tREPO_URL and REPO_USER environment variables."
+  echo -e '\t\t\tcommand: curl -u ${REPO_USER} -X PUT ${REPO_URL} -T <BUILT_PACKAGE>.'
 }
 
 fexit() {
@@ -57,19 +59,17 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-if [[ -z $(which R) ]] || [[ -z $(which curl) ]]; then
-    fexit "R and curl needed but not found"
-fi
-
-[[ ! -z ${dir} ]] && \
-    echo " - building package from ${dir}" || \
+[[ -z $(which R) ]] &&
+    fexit "R needed but not found"
+[[ -z ${dir} ]] && \
     fexit "dir parameter not present"
 
-
+echo " - building package from ${dir}"
 old_dir=$(realpath .)
 cd ${dir}
 
 # Test and build package
+R -q -e "remotes::install_deps()"
 R -q -e "devtools::document()" # || echo " - found docs problems"
 R -q -e "devtools::check()" # || echo " - found test problems"
 pkg=$(R -q -e "devtools::build()" | grep '\[1\]' | cut -d'"' -f2)
